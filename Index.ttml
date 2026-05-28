@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASCADE — Disaster Management Director</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#071018;color:#e6edf3;font-family:Arial,Helvetica,sans-serif;min-height:100vh;}
+header{background:#0d1b2a;padding:12px 18px;border-bottom:2px solid #1b2e44;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.h-left h1{color:#6ee7ff;font-size:15px;font-weight:600;margin-bottom:2px;}
+.h-left .sub{font-size:10px;color:#94a3b8;}
+.h-right{text-align:right;}
+#clock{font-size:17px;color:#6ee7ff;font-weight:700;}
+.threatbadge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:10px;font-weight:600;margin-top:3px;}
+.threat-critical{background:#3d0f0f;color:#f87171;border:1px solid #7f1d1d;}
+.threat-high{background:#3d2a0a;color:#fbbf24;border:1px solid #78350f;}
+.threat-medium{background:#0a2a1a;color:#34d399;border:1px solid #065f46;}
+.grid{display:grid;grid-template-columns:205px 1fr 295px;gap:10px;padding:10px;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}}
+.panel{background:#0f1722;border:1px solid #23364f;border-radius:11px;padding:12px;}
+.panel h2{font-size:11px;color:#7dd3fc;margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px;}
+.bar-row{margin-bottom:8px;}
+.bar-label{display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:3px;}
+.bar{background:#172331;border-radius:999px;height:7px;overflow:hidden;}
+.fill{height:100%;transition:width .6s ease;}
+.divider{border:none;border-top:1px solid #1b2e44;margin:8px 0;}
+.feed{max-height:360px;overflow-y:auto;}
+.feed-item{padding:8px 10px;margin-bottom:6px;border-radius:8px;background:#121d2a;border:1px solid #26394f;font-size:11px;line-height:1.5;}
+.dec-btn{width:100%;margin-top:7px;background:#17324d;color:#e6edf3;border:1px solid #23364f;padding:10px 11px;border-radius:9px;cursor:pointer;text-align:left;font-size:11px;transition:background .15s;line-height:1.4;}
+.dec-btn:hover{background:#21476c;border-color:#38bdf8;}
+.dec-btn .fx{font-size:9px;color:#94a3b8;margin-top:3px;}
+.outcome{font-size:15px;color:#6ee7ff;margin-top:12px;line-height:1.6;}
+#ai-panel{background:#060f18;border:1px solid #1b4060;border-radius:11px;padding:12px;margin-bottom:10px;}
+#ai-panel h2{font-size:11px;color:#38bdf8;margin-bottom:8px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.6px;}
+.ai-badge{background:#0e2d45;color:#38bdf8;font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid #1b5070;}
+#ai-text{font-size:11px;color:#b0c8d8;line-height:1.6;min-height:56px;}
+.dot-anim::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
+@keyframes dots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}
+.ev-title{font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:5px;}
+.ev-text{font-size:11px;color:#94a3b8;margin-bottom:8px;line-height:1.5;}
+.phase-tag{display:inline-block;font-size:9px;padding:2px 8px;border-radius:999px;margin-bottom:6px;}
+.p-0{background:#1a0f2e;color:#a78bfa;border:1px solid #4c1d95;}
+.p-1{background:#1a1a0a;color:#fbbf24;border:1px solid #78350f;}
+.p-2{background:#1a0a0a;color:#f87171;border:1px solid #7f1d1d;}
+.p-3{background:#0a1a0a;color:#34d399;border:1px solid #065f46;}
+.trust-block{background:#0a1520;border:1px solid #1b3a50;border-radius:9px;padding:10px;margin-bottom:8px;}
+.trust-block .tlabel{font-size:10px;color:#7dd3fc;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.ai-trust-block{background:#060f18;border:1px solid #1b4060;border-radius:9px;padding:10px;margin-bottom:8px;}
+.ai-trust-block .tlabel{font-size:10px;color:#38bdf8;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.trust-num{font-size:18px;font-weight:700;margin-bottom:2px;}
+.trust-sub{font-size:9px;color:#94a3b8;}
+.progress-bar{background:#172331;border-radius:999px;height:4px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;background:#38bdf8;transition:width .4s;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-left">
+    <h1>CASCADE — Disaster Management Director</h1>
+    <div class="sub">Military Crisis Response Simulation · Urban Conflict &amp; Civilian Emergency</div>
+  </div>
+  <div class="h-right">
+    <div id="clock">04:00</div>
+    <div><span class="threatbadge threat-critical" id="threatBadge">SITUATION: CRITICAL</span></div>
+    <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="phaseLabel">Phase I — Impact &amp; Shock</div>
+  </div>
+</header>
+
+<div class="grid">
+
+  <div class="panel">
+    <h2>Operational Systems</h2>
+    <div class="bar-row"><div class="bar-label"><span>Search &amp; Rescue</span><span id="sarVal">65%</span></div><div class="bar"><div class="fill" id="sarBar" style="width:65%;background:#38bdf8;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Medical Response</span><span id="medVal">60%</span></div><div class="bar"><div class="fill" id="medBar" style="width:60%;background:#38bdf8;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Infrastructure</span><span id="infraVal">55%</span></div><div class="bar"><div class="fill" id="infraBar" style="width:55%;background:#f87171;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Comms &amp; Intel</span><span id="commsVal">70%</span></div><div class="bar"><div class="fill" id="commsBar" style="width:70%;background:#38bdf8;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Civilian Safety</span><span id="civVal">58%</span></div><div class="bar"><div class="fill" id="civBar" style="width:58%;background:#38bdf8;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Resource Supply</span><span id="resVal">62%</span></div><div class="bar"><div class="fill" id="resBar" style="width:62%;background:#38bdf8;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Public Order</span><span id="orderVal">66%</span></div><div class="bar"><div class="fill" id="orderBar" style="width:66%;background:#38bdf8;"></div></div></div>
+    <div class="bar-row"><div class="bar-label"><span>Interagency Coord.</span><span id="agencyVal">64%</span></div><div class="bar"><div class="fill" id="agencyBar" style="width:64%;background:#38bdf8;"></div></div></div>
+    <hr class="divider">
+    <div class="trust-block">
+      <div class="tlabel">Team Trust</div>
+      <div class="bar-row"><div class="bar-label"><span>Team Cohesion</span><span id="teamVal">68%</span></div><div class="bar"><div class="fill" id="teamBar" style="width:68%;background:#22c55e;"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>Frontline Morale</span><span id="moraleVal">64%</span></div><div class="bar"><div class="fill" id="moraleBar" style="width:64%;background:#22c55e;"></div></div></div>
+      <div class="bar-row"><div class="bar-label"><span>Leadership Trust</span><span id="leadVal">72%</span></div><div class="bar"><div class="fill" id="leadBar" style="width:72%;background:#22c55e;"></div></div></div>
+    </div>
+    <div class="ai-trust-block">
+      <div class="tlabel">AI Advisor Trust</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div><div class="trust-num" id="aiTrustNum" style="color:#38bdf8;">50%</div><div class="trust-sub">Director confidence</div></div>
+        <div style="flex:1;"><div class="bar"><div class="fill" id="aiTrustBar" style="width:50%;background:#38bdf8;"></div></div><div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="aiTrustLabel">Neutral — building rapport</div></div>
+      </div>
+      <div style="margin-top:6px;"><div class="bar-label"><span>AI Advice Followed</span><span id="aiFollowedNum">0/0</span></div><div class="bar"><div class="fill" id="aiFollowedBar" style="width:0%;background:#a78bfa;"></div></div></div>
+    </div>
+    <hr class="divider">
+    <h2>Overall Score</h2>
+    <div id="liveScore" style="font-size:20px;color:#6ee7ff;font-weight:700;">63.9</div>
+    <div style="font-size:10px;color:#94a3b8;">avg. all systems</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+    <div style="font-size:10px;color:#94a3b8;margin-top:3px;" id="progressLabel">Event 1 of 17</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;">
+    <div id="ai-panel">
+      <h2><span>AI Disaster Management Advisor</span><span class="ai-badge">LIVE</span></h2>
+      <div id="ai-text"><span class="dot-anim" style="color:#38bdf8;font-size:11px;">Analysing situation</span></div>
+    </div>
+    <div class="panel" style="flex:1;">
+      <h2>Live Operations Feed</h2>
+      <div class="feed" id="feed"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Director Decision Console</h2>
+    <div id="phaseTag"></div>
+    <div id="eventTitle" class="ev-title"></div>
+    <div id="eventText" class="ev-text"></div>
+    <div id="choices"></div>
+    <div class="outcome" id="outcome"></div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================
+   WIX VERSION — uses postMessage to call backend
+   The page code (wix_page_code.js) bridges to the
+   secure Velo backend (wix_backend_anthropic.jsw)
+   ===================================================== */
+
+let state={
+  time:240,sar:65,med:60,infra:55,comms:70,
+  civ:58,res:62,order:66,agency:64,
+  team:68,morale:64,lead:72,
+  aiTrust:50,aiFollowed:0,aiTotal:0,
+  eventIndex:0,aiLoading:false,lastAiRec:null
+};
+
+const phases=[
+  {label:"Phase I — Impact & Shock",cls:"p-0"},
+  {label:"Phase II — Escalation",cls:"p-1"},
+  {label:"Phase III — Crisis Peak",cls:"p-2"},
+  {label:"Phase IV — Recovery & Stability",cls:"p-3"}
+];
+
+const events=[
+  {phase:0,title:"Strike on City Infrastructure",text:"Artillery strikes have hit the central district. Power grid is down across 3 sectors. Water mains ruptured. Estimated 200+ casualties. Emergency services overwhelmed.",choices:[{label:"Deploy all SAR teams immediately — full mobilisation",fx:{sar:+10,res:-8,morale:+5,lead:+4},note:"Maximum immediate response"},{label:"Stage deployment — assess zones first",fx:{sar:+5,comms:+8,res:-3,team:+4},note:"Measured, preserves resources"},{label:"Request military engineering support before deploying",fx:{infra:+8,sar:-4,agency:+6,lead:-3},note:"Slower start, stronger foundation"}]},
+  {phase:0,title:"Hospital Under Threat",text:"City General Hospital — the only Level 1 trauma centre — is 800m from active combat. Staff are requesting evacuation. 140 critical patients cannot be moved safely.",choices:[{label:"Negotiate safe corridor with armed factions — suspend ops",fx:{civ:+10,agency:+6,lead:+5,order:-5},note:"Prioritises lives, cedes ground"},{label:"Establish armed security perimeter around hospital",fx:{civ:+7,order:+8,res:-6,morale:-4},note:"Costly, may provoke escalation"},{label:"Relocate mobile surgical units — partial decentralisation",fx:{med:+10,infra:-4,res:-5,team:+5},note:"Disperses capability, reduces single-point risk"}]},
+  {phase:0,title:"Communications Blackout",text:"Secure comms network has failed across the eastern sector. Field teams are unreachable. Three rescue convoys are operating without contact. Last known position: 2 hours ago.",choices:[{label:"Deploy comms relay vehicles — restore network",fx:{comms:+14,res:-6,sar:-3},note:"Restores full situational awareness"},{label:"Send liaison officers to each convoy on foot",fx:{comms:+6,morale:+6,sar:-5,team:+4},note:"Slower, builds frontline confidence"},{label:"Activate satellite backup — share access with all agencies",fx:{comms:+10,agency:+8,res:-4},note:"Interoperable but exposes sensitive data"}]},
+  {phase:0,title:"Civilian Mass Displacement",text:"An estimated 15,000 civilians are moving toward the eastern evacuation corridor. The route passes through an uncleared zone. Mines suspected. No alternative route available within 6 hours.",choices:[{label:"Halt civilian movement — enforce temporary holding zones",fx:{civ:+5,order:+8,morale:-6,lead:-5},note:"Safe but deeply unpopular"},{label:"Fast-track EOD clearance — accept 4-hour delay",fx:{civ:+12,infra:+5,res:-8,sar:-4},note:"Safest outcome if successful"},{label:"Open corridor with military escort — accept residual risk",fx:{civ:+7,order:+5,morale:+8,lead:+6},note:"Faster, calculated risk"}]},
+  {phase:1,title:"Team Breakdown — Sector Commander",text:"Your most experienced sector commander has refused a direct order, citing unacceptable risk to his team. Two junior officers are backing him. Team cohesion is fracturing in public view.",choices:[{label:"Relieve commander immediately — enforce command authority",fx:{lead:+8,team:-10,morale:-8,order:+4},note:"Maintains authority, damages morale"},{label:"Hold private debrief — find operational compromise",fx:{team:+8,lead:+4,morale:+6,sar:-3},note:"Restores cohesion, slows ops"},{label:"Acknowledge risk openly — modify the order collaboratively",fx:{team:+10,morale:+10,lead:+6,agency:+4},note:"Builds trust, sets participatory precedent"}]},
+  {phase:1,title:"Media Access Request",text:"Three international journalists are requesting embedded access to document rescue operations. Security assessment rates them as low risk. Your comms team is divided.",choices:[{label:"Grant full embedded access — full transparency",fx:{agency:+6,civ:+8,order:-4,comms:+5},note:"Builds public trust, operational risk"},{label:"Deny access — operational security priority",fx:{order:+5,comms:+4,civ:-6,agency:-5},note:"Clean ops, reputational cost"},{label:"Pool access — one journalist, curated access",fx:{civ:+5,agency:+4,comms:+6,order:+3},note:"Managed transparency"}]},
+  {phase:1,title:"AI System Recommendation Disputed",text:"The AI advisor has recommended prioritising water restoration over search and rescue for the next 6 hours, citing disease prevention data. Your medical officer strongly disagrees.",choices:[{label:"Follow AI recommendation — water restoration priority",fx:{infra:+10,med:-6,aiTrust:+8,team:-5},note:"Data-driven, overrules human expert"},{label:"Follow medical officer — SAR priority maintained",fx:{sar:+8,med:+6,morale:+5,aiTrust:-8},note:"Human expertise wins"},{label:"Split resources — parallel tracks, reduced efficiency",fx:{sar:+4,infra:+5,med:+3,aiTrust:+3,team:+4},note:"Compromise with cost"}]},
+  {phase:1,title:"Resource Shortage — Medical Supplies",text:"Field hospitals report critical shortage of blood plasma and surgical supplies. Two aid convoys are 8 hours out. A local private clinic has supplies but demands payment and legal immunity.",choices:[{label:"Requisition supplies under emergency powers",fx:{med:+12,res:+5,agency:-6,order:-4},note:"Fast, legally complex"},{label:"Accept clinic's terms — negotiate immunity agreement",fx:{med:+10,agency:+4,lead:-5,civ:+3},note:"Effective but sets precedent"},{label:"Accelerate convoy — aerial resupply request",fx:{med:+6,res:-8,agency:+6,comms:+4},note:"Slower, cleaner"}]},
+  {phase:2,title:"Secondary Strike — Rescue Teams Exposed",text:"A secondary strike has hit an area where two SAR teams were operating. 6 responders are injured. Teams are demanding withdrawal from active zones. Morale is at critical low.",choices:[{label:"Mandatory withdrawal — protect all remaining personnel",fx:{sar:-12,morale:+10,lead:+5,civ:-8},note:"Preserves team, leaves civilians"},{label:"Voluntary redeployment — call for volunteers only",fx:{sar:-4,morale:+6,lead:+8,team:+6},note:"Respects choice, maintains some ops"},{label:"Maintain operations — reframe as calculated risk",fx:{sar:+4,morale:-10,lead:-6,civ:+6},note:"Maximises response, damages trust"}]},
+  {phase:2,title:"AI Trust Crisis",text:"The AI advisor's earlier recommendation led to a 3-hour delay in SAR operations. Post-analysis shows the AI used incomplete data. Your team is openly questioning AI reliability.",choices:[{label:"Suspend AI advisor — human-only decision making",fx:{aiTrust:-20,team:+8,comms:-4,lead:+5},note:"Rebuilds human confidence"},{label:"Audit AI data inputs — conditional reinstatement",fx:{aiTrust:-5,comms:+6,team:+5,lead:+6},note:"Measured, evidence-based"},{label:"Defend AI system — explain data gap publicly",fx:{aiTrust:+5,team:-8,lead:-5,agency:-4},note:"Maintains AI role, damages team trust"}]},
+  {phase:2,title:"Interagency Conflict",text:"Military forces have established a parallel command structure, bypassing your Emergency Operations Centre. They are redirecting resources without coordination. Civilian response is fragmenting.",choices:[{label:"Invoke legal mandate — formal written order to military",fx:{agency:+10,lead:+8,order:+6,morale:-4},note:"Legally sound, confrontational"},{label:"Request joint command meeting — negotiate unified structure",fx:{agency:+12,team:+6,lead:+5,res:-3},note:"Collaborative, time-consuming"},{label:"Adapt — create liaison officer role, maintain dual track",fx:{agency:+6,comms:+6,res:-4,order:+3},note:"Pragmatic workaround"}]},
+  {phase:2,title:"Hostage Situation — Aid Workers",text:"Four international aid workers have been taken by an armed group. Demands: stop all aerial operations. Your team includes two colleagues of the hostages.",choices:[{label:"Suspend aerial ops — prioritise hostage safety",fx:{civ:-8,sar:-6,morale:+5,agency:+4},note:"Humanitarian priority, operational cost"},{label:"Continue ops — engage security services for rescue",fx:{sar:+4,civ:+4,morale:-8,team:-6},note:"Maintains response, team trauma"},{label:"Temporary pause — 12h window for negotiation",fx:{morale:+6,team:+5,sar:-3,agency:+5},note:"Time-limited compromise"}]},
+  {phase:2,title:"Disease Outbreak Alert",text:"WHO field team reports cholera indicators in two displacement camps. If confirmed, 40,000 people are at risk. Acting now diverts 30% of medical resources from trauma care.",choices:[{label:"Immediate containment — divert medical resources",fx:{med:-8,civ:+12,res:-6,agency:+8},note:"Prevents secondary disaster"},{label:"Await lab confirmation — 48h delay",fx:{med:+4,civ:-10,agency:-4,comms:+4},note:"Evidence-based, high risk"},{label:"Parallel response — WHO leads outbreak, you lead trauma",fx:{med:+4,civ:+6,agency:+10,res:-5},note:"Divides but coordinates"}]},
+  {phase:3,title:"AI Advisor Rehabilitation",text:"Updated AI system with corrected data feeds has provided a new resource allocation model. Early simulations show 23% efficiency gain. Your team remains sceptical after past failure.",choices:[{label:"Full reinstatement — AI leads resource allocation",fx:{aiTrust:+15,res:+10,team:-6,morale:-5},note:"Maximum efficiency, team resistance"},{label:"Pilot reinstatement — AI advisory on one sector only",fx:{aiTrust:+8,res:+5,team:+4,lead:+5},note:"Graduated trust rebuilding"},{label:"Reject reinstatement — maintain human-led model",fx:{aiTrust:-10,team:+8,morale:+6,res:-5},note:"Team confidence, efficiency loss"}]},
+  {phase:3,title:"Coalition Partner Dispute",text:"An international partner organisation is publicly criticising your resource distribution decisions, claiming ethnic bias in aid delivery. The claim is unfounded but spreading rapidly.",choices:[{label:"Release full distribution data — radical transparency",fx:{agency:+10,civ:+8,comms:+6,lead:+5},note:"Credibility move, exposes all decisions"},{label:"Issue formal denial — legal response to false claims",fx:{order:+5,agency:-6,civ:-4,lead:-3},note:"Defensive, amplifies story"},{label:"Invite independent audit — suspend partner coordination pending",fx:{agency:+6,civ:+6,lead:+8,res:-4},note:"Credible, slows joint ops"}]},
+  {phase:3,title:"Staff Wellbeing Crisis",text:"Operational psychologist reports acute burnout across 40% of your team after 72 hours continuous operations. Three key personnel are at breaking point. Rotation reserves are exhausted.",choices:[{label:"Mandatory 8-hour rest rotation — accept ops reduction",fx:{morale:+14,team:+10,sar:-8,med:-5},note:"Human priority, operational cost"},{label:"Voluntary rest — maintain critical personnel on duty",fx:{morale:+6,team:+5,sar:-3,lead:+4},note:"Balanced, respects autonomy"},{label:"Push through — mission first, debrief after",fx:{sar:+5,morale:-14,team:-10,lead:-8},note:"Short-term gain, long-term damage"}]},
+  {phase:3,title:"Transition to Recovery Phase",text:"Active conflict has subsided. International donors are requesting a 30-day recovery plan. Community leaders want local ownership. AI is recommending a data-driven reconstruction model.",choices:[{label:"Accept AI reconstruction model — efficiency-led recovery",fx:{aiTrust:+10,infra:+10,res:+8,team:-5,agency:+5},note:"Fast, technocratic"},{label:"Community-led recovery — local ownership priority",fx:{civ:+14,morale:+8,agency:+6,infra:-4,res:-4},note:"Slower, more legitimate"},{label:"Hybrid model — AI planning tool, community validation",fx:{aiTrust:+6,civ:+8,infra:+7,team:+6,agency:+8},note:"Best of both, complex to manage"}]}
+];
+
+/* ---- Wix postMessage bridge ---- */
+let pendingAiResolve = null;
+
+window.addEventListener("message", function(event) {
+  if (event.data && event.data.type === "AI_RESPONSE") {
+    if (pendingAiResolve) {
+      pendingAiResolve(event.data.text || "Assessment unavailable.");
+      pendingAiResolve = null;
+    }
+  }
+});
+
+function callAI(prompt) {
+  return new Promise((resolve) => {
+    pendingAiResolve = resolve;
+    window.parent.postMessage({ type: "ASK_AI", prompt: prompt }, "*");
+    // Timeout fallback after 15 seconds
+    setTimeout(() => {
+      if (pendingAiResolve) {
+        pendingAiResolve("Advisor timeout — Director's judgement required.");
+        pendingAiResolve = null;
+      }
+    }, 15000);
+  });
+}
+
+/* ---- UI helpers ---- */
+function getTime(){let h=Math.floor(state.time/60),m=state.time%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");}
+function liveScore(){return Math.round((state.sar+state.med+state.infra+state.comms+state.civ+state.res+state.order+state.agency)/8*10)/10;}
+function teamScore(){return Math.round((state.team+state.morale+state.lead)/3);}
+function barColor(v){return v>=70?"#22c55e":v>=45?"#38bdf8":"#f87171";}
+function aiTrustLabel(v){
+  if(v>=80)return "High confidence — AI integrated";
+  if(v>=60)return "Growing trust — selective use";
+  if(v>=40)return "Neutral — building rapport";
+  if(v>=20)return "Sceptical — limited use";
+  return "Distrust — AI marginalised";
+}
+
+function updateBars(){
+  const opMap={sar:"sar",med:"med",infra:"infra",comms:"comms",civ:"civ",res:"res",order:"order",agency:"agency"};
+  Object.entries(opMap).forEach(([k,id])=>{
+    const v=Math.max(0,Math.min(100,Math.round(state[k])));
+    document.getElementById(id+"Bar").style.width=v+"%";
+    document.getElementById(id+"Bar").style.background=barColor(v);
+    document.getElementById(id+"Val").textContent=v+"%";
+  });
+  ["team","morale","lead"].forEach(id=>{
+    const v=Math.max(0,Math.min(100,Math.round(state[id])));
+    document.getElementById(id+"Bar").style.width=v+"%";
+    document.getElementById(id+"Bar").style.background=barColor(v);
+    document.getElementById(id+"Val").textContent=v+"%";
+  });
+  const at=Math.max(0,Math.min(100,Math.round(state.aiTrust)));
+  document.getElementById("aiTrustBar").style.width=at+"%";
+  document.getElementById("aiTrustNum").textContent=at+"%";
+  document.getElementById("aiTrustLabel").textContent=aiTrustLabel(at);
+  const followPct=state.aiTotal>0?Math.round((state.aiFollowed/state.aiTotal)*100):0;
+  document.getElementById("aiFollowedBar").style.width=followPct+"%";
+  document.getElementById("aiFollowedNum").textContent=state.aiFollowed+"/"+state.aiTotal;
+  document.getElementById("liveScore").textContent=liveScore();
+  const pct=Math.round((state.eventIndex/events.length)*100);
+  document.getElementById("progressFill").style.width=pct+"%";
+  document.getElementById("progressLabel").textContent="Event "+state.eventIndex+" of "+events.length;
+  const score=liveScore();
+  const badge=document.getElementById("threatBadge");
+  if(score>=70){badge.className="threatbadge threat-medium";badge.textContent="SITUATION: STABILISING";}
+  else if(score>=50){badge.className="threatbadge threat-high";badge.textContent="SITUATION: SEVERE";}
+  else{badge.className="threatbadge threat-critical";badge.textContent="SITUATION: CRITICAL";}
+}
+
+function addFeed(text,type){
+  const feed=document.getElementById("feed");
+  const div=document.createElement("div");
+  div.className="feed-item";
+  const color=type==="ai"?"#a78bfa":type==="decision"?"#34d399":type==="alert"?"#f87171":"#7dd3fc";
+  div.innerHTML="<b style='color:"+color+"'>["+getTime()+"]</b> "+text;
+  feed.prepend(div);
+}
+
+async function getAIAdvice(ev){
+  if(state.aiLoading)return;
+  state.aiLoading=true;
+  state.aiTotal++;
+  const aiDiv=document.getElementById("ai-text");
+  aiDiv.innerHTML="<span class='dot-anim' style='color:#38bdf8;font-size:11px;'>Analysing operational situation</span>";
+  const stateStr=`SAR:${Math.round(state.sar)}% | Medical:${Math.round(state.med)}% | Infrastructure:${Math.round(state.infra)}% | Comms:${Math.round(state.comms)}% | Civilian Safety:${Math.round(state.civ)}% | Resources:${Math.round(state.res)}% | Public Order:${Math.round(state.order)}% | Interagency:${Math.round(state.agency)}% | Team Cohesion:${Math.round(state.team)}% | Morale:${Math.round(state.morale)}% | Leadership Trust:${Math.round(state.lead)}% | AI Trust:${Math.round(state.aiTrust)}% | Overall:${liveScore()}`;
+  const prompt=`You are an AI Disaster Management Advisor supporting a Director during an active military conflict and civilian crisis.\n\nCURRENT STATUS: ${stateStr}\nPHASE: ${phases[ev.phase].label}\nEVENT: ${ev.title}\nSITUATION: ${ev.text}\n\nOPTIONS:\n${ev.choices.map((c,i)=>`${i+1}. "${c.label}" [${c.note}] → effects: ${JSON.stringify(c.fx)}`).join("\n")}\n\nNote: AI Trust is currently ${Math.round(state.aiTrust)}%. Calibrate tone accordingly.\n\nProvide a concise disaster management assessment (3-4 lines). Recommend one option clearly. Reference Sendai Framework, ICS, or SPHERE standards where relevant.`;
+  try{
+    const text = await callAI(prompt);
+    state.lastAiRec = text;
+    aiDiv.innerHTML = text.replace(/\n/g,"<br>");
+    addFeed("AI Advisor: "+text.substring(0,85)+"…","ai");
+  }catch(e){
+    state.lastAiRec = null;
+    aiDiv.innerHTML="<span style='color:#f87171'>Advisor link unavailable. Director's judgement required.</span>";
+  }
+  state.aiLoading = false;
+}
+
+function nextEvent(){
+  if(state.eventIndex>=events.length){endGame();return;}
+  const ev=events[state.eventIndex];
+  const ph=phases[ev.phase];
+  document.getElementById("phaseLabel").textContent=ph.label;
+  document.getElementById("phaseTag").innerHTML="<span class='phase-tag "+ph.cls+"'>"+ph.label+"</span>";
+  document.getElementById("eventTitle").textContent=ev.title;
+  document.getElementById("eventText").textContent=ev.text;
+  const choices=document.getElementById("choices");
+  choices.innerHTML="";
+  ev.choices.forEach((choice,idx)=>{
+    const btn=document.createElement("button");
+    btn.className="dec-btn";
+    const fxStr=Object.entries(choice.fx).map(([k,v])=>(v>0?"+":"")+v+" "+k).join(" | ");
+    btn.innerHTML=choice.label+"<div class='fx'>"+fxStr+"</div>";
+    btn.onclick=()=>{
+      if(choice.fx.aiTrust===undefined){if(state.lastAiRec&&idx===0)state.aiFollowed++;}
+      else{if(choice.fx.aiTrust>0)state.aiFollowed++;}
+      Object.keys(choice.fx).forEach(k=>{if(state[k]!==undefined)state[k]+=choice.fx[k];});
+      state.time+=90;
+      updateBars();
+      addFeed(ev.title+": "+choice.label,"decision");
+      document.getElementById("clock").textContent=getTime();
+      state.eventIndex++;
+      nextEvent();
+    };
+    choices.appendChild(btn);
+  });
+  updateBars();
+  getAIAdvice(ev);
+}
+
+function endGame(){
+  const score=liveScore();
+  const ts=teamScore();
+  const at=Math.round(state.aiTrust);
+  const followed=state.aiTotal>0?Math.round((state.aiFollowed/state.aiTotal)*100):0;
+  let result,detail;
+  if(score>=75){result="Mission Accomplished — Effective Crisis Response";detail="Systems stabilised. Community resilience preserved.";}
+  else if(score>=55){result="Partial Success — Managed Crisis";detail="Critical systems held. Significant damage sustained. Recovery possible.";}
+  else if(score>=35){result="Response Failure — Cascading Breakdown";detail="Multiple system failures. Long-term instability assessed.";}
+  else{result="Catastrophic Failure — Total Collapse";detail="Response overwhelmed. Humanitarian situation critical.";}
+  document.getElementById("choices").innerHTML="";
+  document.getElementById("eventTitle").textContent="";
+  document.getElementById("eventText").textContent="";
+  document.getElementById("phaseTag").innerHTML="";
+  document.getElementById("outcome").innerHTML=result+"<br><br><span style='font-size:11px;color:#94a3b8;'>"+detail+"</span><br><br><span style='font-size:13px;'>Operational Score: <b style='color:#6ee7ff;'>"+score+"</b>/100</span><br><span style='font-size:13px;'>Team Trust: <b style='color:#22c55e;'>"+ts+"</b>/100</span><br><span style='font-size:13px;'>AI Trust: <b style='color:#38bdf8;'>"+at+"</b>/100</span><br><span style='font-size:13px;'>AI Advice Followed: <b style='color:#a78bfa;'>"+followed+"%</b></span>";
+  document.getElementById("ai-text").innerHTML="<b style='color:#6ee7ff;'>Simulation complete.</b><br>Operational: "+score+"/100 | Team Trust: "+ts+"/100 | AI Trust: "+at+"/100 | AI followed: "+followed+"%.";
+  addFeed("Exercise completed. Score: "+score+" | Team Trust: "+ts+" | AI Trust: "+at,"ai");
+  document.getElementById("progressFill").style.width="100%";
+  document.getElementById("progressLabel").textContent="Complete — "+events.length+" events";
+}
+
+updateBars();
+nextEvent();
+</script>
+</body>
+</html>
